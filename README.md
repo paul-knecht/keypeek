@@ -1,5 +1,7 @@
 # KeyPeek
 
+<p align="center"><img src="docs/images/keypeek-panel.png" width="360" alt="KeyPeek panel showing the most useful Finder shortcuts"></p>
+
 A small macOS menu bar app that shows the keyboard shortcuts of the app you are using, with the most useful ones at the top.
 
 Click the ⌘ icon in the menu bar and KeyPeek opens a panel for the app in front:
@@ -10,6 +12,12 @@ Click the ⌘ icon in the menu bar and KeyPeek opens a panel for the app in fron
 - **All shortcuts**: every shortcut found in the app's menus, grouped by menu.
 
 KeyPeek was built as a learning project. It is version 1 and has only been built and tested on macOS 27 with Xcode 27.
+
+## Why I built it
+
+I keep forgetting keyboard shortcuts. I wanted one click that shows the useful shortcuts of the app I'm in, instead of a long list.
+
+Built with [Claude Code](https://claude.com/claude-code) while learning Swift, Xcode and Git.
 
 ## Requirements
 
