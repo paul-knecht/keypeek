@@ -47,6 +47,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentSize = NSSize(width: 360, height: 480)
         popover.contentViewController = NSHostingController(rootView: PanelView(model: model))
 
+        // Give the app an Edit menu. It is never visible (KeyPeek has no menu bar
+        // of its own), but macOS uses it to make ⌘X, ⌘C, ⌘V and ⌘A work in
+        // text fields, for example when pasting the API key.
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let editItem = NSMenuItem()
+        editItem.submenu = editMenu
+        let mainMenu = NSMenu()
+        mainMenu.addItem(editItem)
+        NSApp.mainMenu = mainMenu
+
         // Close the panel when the user clicks anywhere outside KeyPeek.
         // (A "global monitor" hears clicks that go to other apps.)
         NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
