@@ -40,6 +40,23 @@ final class MenuFlattenerTests: XCTestCase {
         XCTAssertFalse(titles.contains("My Private Service"))
     }
 
+    func testSkipsServicesInOtherLanguages() {
+        // On a German Mac the submenu is called "Dienste". Any submenu inside
+        // the app's own menu is skipped, whatever it is called.
+        let german = [
+            item("Apple"),
+            item("Finder", children: [
+                item("Einstellungen …", key: ","),
+                item("Dienste", children: [item("Mein privater Dienst", key: "p")]),
+            ]),
+            item("Ablage", children: [
+                item("Öffnen mit", children: [item("Vorschau", key: "o")]),
+            ]),
+        ]
+        let titles = MenuFlattener.shortcuts(from: german).map(\.title)
+        XCTAssertEqual(titles, ["Einstellungen …", "Vorschau"])
+    }
+
     func testDropsItemsWithoutShortcut() {
         let titles = MenuFlattener.shortcuts(from: menuBar).map(\.title)
         XCTAssertFalse(titles.contains("Secret Document.txt"))

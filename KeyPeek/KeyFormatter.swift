@@ -23,7 +23,14 @@ enum KeyFormatter {
     // Finds the name of the main key: a character, or a symbol for a special key.
     private static func keyName(cmdChar: String?, virtualKey: Int?, glyph: Int?) -> String? {
         if let char = cmdChar, !char.isEmpty {
-            return specialCharacters[char] ?? char.uppercased()
+            if let name = specialCharacters[char] {
+                return name
+            }
+            // Ordinary characters are shown as they are. Invisible ones we don't
+            // know are skipped, and the key code or glyph below is used instead.
+            if !isInvisible(char) {
+                return char.uppercased()
+            }
         }
         if let virtualKey, let name = virtualKeys[virtualKey] {
             return name
@@ -34,10 +41,22 @@ enum KeyFormatter {
         return nil
     }
 
+    // True for characters that have no visible shape: control characters and
+    // the private range macOS uses for keys like arrows and F-keys.
+    private static func isInvisible(_ char: String) -> Bool {
+        char.unicodeScalars.contains { scalar in
+            scalar.value < 0x20 || scalar.value == 0x7F || (0xF700...0xF8FF).contains(scalar.value)
+        }
+    }
+
     // Characters that stand for a special key and need a readable name.
     private static let specialCharacters: [String: String] = [
         " ": "Space", "\r": "↩", "\t": "⇥", "\u{8}": "⌫", "\u{7F}": "⌫", "\u{1B}": "⎋",
         "\u{F700}": "↑", "\u{F701}": "↓", "\u{F702}": "←", "\u{F703}": "→",
+        "\u{F704}": "F1", "\u{F705}": "F2", "\u{F706}": "F3", "\u{F707}": "F4",
+        "\u{F708}": "F5", "\u{F709}": "F6", "\u{F70A}": "F7", "\u{F70B}": "F8",
+        "\u{F70C}": "F9", "\u{F70D}": "F10", "\u{F70E}": "F11", "\u{F70F}": "F12",
+        "\u{F728}": "⌦", "\u{F729}": "↖", "\u{F72B}": "↘", "\u{F72C}": "⇞", "\u{F72D}": "⇟",
     ]
 
     // macOS key codes for keys that have no character.

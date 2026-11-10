@@ -90,6 +90,23 @@ final class RankingClientTests: XCTestCase {
         XCTAssertEqual(result.suggestions.map(\.keys), ["⇧⌘."])
     }
 
+    func testParseDropsSuggestionWithModifiersInAnotherOrder() throws {
+        let menu = [Shortcut(menuPath: ["View"], title: "Show Hidden Files", keys: "⇧⌘.")]
+        let extra = [["keys": "⌘⇧.", "description": "Same keys, modifiers swapped"]]
+        let result = try RankingClient.parse(response(top: [], extra: extra), statusCode: 200, shortcuts: menu)
+        XCTAssertEqual(result.suggestions, [])
+    }
+
+    func testParseDropsRepeatedSuggestions() throws {
+        let extra = [
+            ["keys": "⇧⌘.", "description": "Show hidden files"],
+            ["keys": "⌘⇧.", "description": "Toggle hidden files"],
+            ["keys": "⌥⌘P", "description": "Show path bar"],
+        ]
+        let result = try RankingClient.parse(response(top: [], extra: extra), statusCode: 200, shortcuts: shortcuts)
+        XCTAssertEqual(result.suggestions.map(\.description), ["Show hidden files", "Show path bar"])
+    }
+
     func testParseDropsEmptySuggestions() throws {
         let extra = [["keys": "", "description": "No keys"], ["keys": "⌘J", "description": " "]]
         let result = try RankingClient.parse(response(top: [], extra: extra), statusCode: 200, shortcuts: shortcuts)

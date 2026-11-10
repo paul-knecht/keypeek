@@ -164,19 +164,27 @@ enum RankingClient {
             if !topIDs.contains(id) { topIDs.append(id) }
         }
 
-        // Drop suggestions that are empty or that the menus already contain.
-        let menuKeys = Set(shortcuts.map { normalized($0.keys) })
+        // Drop suggestions that are empty, that the menus already contain,
+        // or that repeat an earlier suggestion.
+        var seenKeys = Set(shortcuts.map { normalized($0.keys) })
         let suggestions = answer.extra.filter { suggestion in
             let keys = normalized(suggestion.keys)
             let description = suggestion.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            return !keys.isEmpty && !description.isEmpty && !menuKeys.contains(keys)
+            guard !keys.isEmpty, !description.isEmpty else { return false }
+            // insert returns whether the keys were new; if not, it is a duplicate.
+            return seenKeys.insert(keys).inserted
         }
 
         return RankingResult(topIDs: Array(topIDs.prefix(10)), suggestions: Array(suggestions.prefix(8)))
     }
 
-    // Makes "⌘ n" and "⌘N" compare as equal.
+    // Makes "⌘ n", "⌘N" and differently ordered modifiers ("⌘⇧." and "⇧⌘.")
+    // compare as equal: modifiers first in a fixed order, then the key.
     private static func normalized(_ keys: String) -> String {
-        keys.filter { !$0.isWhitespace }.uppercased()
+        let modifierOrder = "⌃⌥⇧⌘"
+        let compact = keys.filter { !$0.isWhitespace }.uppercased()
+        let modifiers = modifierOrder.filter { compact.contains($0) }
+        let key = compact.filter { !modifierOrder.contains($0) }
+        return modifiers + key
     }
 }

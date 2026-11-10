@@ -47,6 +47,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentSize = NSSize(width: 360, height: 480)
         popover.contentViewController = NSHostingController(rootView: PanelView(model: model))
 
+        // Close the panel when the user clicks anywhere outside KeyPeek.
+        // (A "global monitor" hears clicks that go to other apps.)
+        NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            Task { @MainActor in self?.popover.close() }
+        }
+
         // Build the right-click menu.
         let rerankItem = NSMenuItem(title: "Re-rank this app", action: #selector(rerank), keyEquivalent: "")
         rerankItem.target = self

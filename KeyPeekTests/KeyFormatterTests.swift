@@ -46,6 +46,18 @@ final class KeyFormatterTests: XCTestCase {
         XCTAssertEqual(KeyFormatter.string(cmdChar: "\u{F702}", virtualKey: nil, glyph: nil, modifiers: 0), "⌘←")
     }
 
+    func testFunctionKeyCharBecomesName() {
+        // U+F704 is how some apps report F1, U+F728 is Forward Delete.
+        XCTAssertEqual(KeyFormatter.string(cmdChar: "\u{F704}", virtualKey: nil, glyph: nil, modifiers: 8), "F1")
+        XCTAssertEqual(KeyFormatter.string(cmdChar: "\u{F728}", virtualKey: nil, glyph: nil, modifiers: 0), "⌘⌦")
+    }
+
+    func testUnknownSpecialCharFallsBackToVirtualKey() {
+        // An unknown invisible character must not be printed; use the key code instead.
+        XCTAssertEqual(KeyFormatter.string(cmdChar: "\u{F7FF}", virtualKey: 36, glyph: nil, modifiers: 0), "⌘↩")
+        XCTAssertNil(KeyFormatter.string(cmdChar: "\u{F7FF}", virtualKey: nil, glyph: nil, modifiers: 0))
+    }
+
     func testNoKeyIsNil() {
         XCTAssertNil(KeyFormatter.string(cmdChar: nil, virtualKey: nil, glyph: nil, modifiers: 0))
     }
