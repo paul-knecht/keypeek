@@ -119,3 +119,7 @@ xcodebuild -project KeyPeek.xcodeproj -scheme KeyPeek -derivedDataPath build tes
 
 - The design and the original build plan are in `docs/superpowers/`.
 - The Claude model is set in one place, `RankingClient.model` in `KeyPeek/RankingClient.swift`.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).
