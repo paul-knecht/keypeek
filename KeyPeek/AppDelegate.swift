@@ -17,11 +17,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Knows which app was in front before the icon was clicked.
     let tracker = FrontAppTracker()
 
-    // Holds what the panel shows.
-    let model = PanelModel()
-
     // Where the API key is kept.
     let keychain = KeychainStore()
+
+    // Holds what the panel shows. It gets the real pieces it needs:
+    // the saved rankings, a way to read the API key, and the request to Claude.
+    lazy var model = PanelModel(
+        store: RankingStore(),
+        loadKey: { [keychain] in keychain.load() },
+        rank: { appName, shortcuts, apiKey in
+            try await RankingClient.rank(appName: appName, shortcuts: shortcuts, apiKey: apiKey)
+        }
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create the menu bar icon.
@@ -41,12 +48,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentViewController = NSHostingController(rootView: PanelView(model: model))
 
         // Build the right-click menu.
-        menu.addItem(NSMenuItem(title: "Re-rank this app", action: nil, keyEquivalent: ""))
+        let rerankItem = NSMenuItem(title: "Re-rank this app", action: #selector(rerank), keyEquivalent: "")
+        rerankItem.target = self
+        menu.addItem(rerankItem)
         let keyItem = NSMenuItem(title: "Set API key…", action: #selector(setAPIKey), keyEquivalent: "")
         keyItem.target = self
         menu.addItem(keyItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+    }
+
+    // Forgets the saved ranking of the app shown last and asks Claude again.
+    @objc func rerank() {
+        model.rerank()
     }
 
     // Shows a small dialog where the user types their Anthropic API key.

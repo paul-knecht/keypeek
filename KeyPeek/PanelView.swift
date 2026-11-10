@@ -54,6 +54,9 @@ struct PanelView: View {
     private var shortcutList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 4) {
+                mostUseful
+                notInTheMenus
+
                 sectionTitle("All shortcuts")
                 ForEach(model.groups) { group in
                     Text(group.title)
@@ -68,6 +71,47 @@ struct PanelView: View {
                 }
             }
             .padding(12)
+        }
+    }
+
+    // The ranked shortcuts, or one line saying why there is no ranking.
+    @ViewBuilder
+    private var mostUseful: some View {
+        switch model.rankingState {
+        case .idle:
+            EmptyView()
+        case .ranking:
+            sectionTitle("Most useful")
+            Text("Ranking…").foregroundStyle(.secondary).padding(.bottom, 12)
+        case .message(let text):
+            sectionTitle("Most useful")
+            Text(text).foregroundStyle(.secondary).padding(.bottom, 12)
+        case .ready:
+            if !model.top.isEmpty {
+                sectionTitle("Most useful")
+                ForEach(model.top) { shortcut in
+                    ShortcutRow(title: shortcut.title,
+                                detail: shortcut.menuPath.joined(separator: " > "),
+                                keys: shortcut.keys)
+                }
+                Spacer().frame(height: 12)
+            }
+        }
+    }
+
+    // Shortcuts Claude suggested that the menus don't list. They get their own
+    // section and a warning, because the app cannot check them.
+    @ViewBuilder
+    private var notInTheMenus: some View {
+        if !model.suggestions.isEmpty {
+            sectionTitle("Not in the menus")
+            Text("Suggested by Claude. Not checked, may be wrong.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(model.suggestions, id: \.keys) { suggestion in
+                ShortcutRow(title: suggestion.description, detail: "", keys: suggestion.keys)
+            }
+            Spacer().frame(height: 12)
         }
     }
 
