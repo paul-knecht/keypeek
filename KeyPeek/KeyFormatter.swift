@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 
 // Turns the raw key data of a menu item into readable text like "⇧⌘.".
 enum KeyFormatter {
@@ -18,6 +18,17 @@ enum KeyFormatter {
         if modifiers & 1 != 0 { text += "⇧" }
         if modifiers & 8 == 0 { text += "⌘" }
         return text + key
+    }
+
+    // The same, for a key combination the user just pressed on the keyboard.
+    // Returns nil if only modifier keys (like ⌘ alone) were pressed.
+    static func string(pressedCharacters: String, keyCode: Int, flags: NSEvent.ModifierFlags) -> String? {
+        var modifiers = 0
+        if flags.contains(.shift) { modifiers |= 1 }
+        if flags.contains(.option) { modifiers |= 2 }
+        if flags.contains(.control) { modifiers |= 4 }
+        if !flags.contains(.command) { modifiers |= 8 }
+        return string(cmdChar: pressedCharacters, virtualKey: keyCode, glyph: nil, modifiers: modifiers)
     }
 
     // Finds the name of the main key: a character, or a symbol for a special key.

@@ -30,14 +30,19 @@ struct PanelView: View {
     private var content: some View {
         if model.needsPermission {
             permissionMessage
-        } else if model.groups.isEmpty {
-            Text(model.isReading ? "Reading shortcuts…" : "No shortcuts found in this app's menus.")
+        } else if model.groups.isEmpty && model.myShortcuts.isEmpty {
+            Text(emptyText)
                 .foregroundStyle(.secondary)
                 .padding(12)
             Spacer()
         } else {
             shortcutList
         }
+    }
+
+    // Shown in place of the list while it is empty.
+    private var emptyText: String {
+        model.isReading ? "Reading shortcuts…" : "No shortcuts found in this app's menus."
     }
 
     private var permissionMessage: some View {
@@ -54,10 +59,14 @@ struct PanelView: View {
     private var shortcutList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 4) {
+                mine
                 mostUseful
                 notInTheMenus
 
                 sectionTitle("All shortcuts")
+                if model.groups.isEmpty {
+                    Text(emptyText).foregroundStyle(.secondary)
+                }
                 ForEach(model.groups) { group in
                     Text(group.title)
                         .font(.subheadline.bold())
@@ -71,6 +80,28 @@ struct PanelView: View {
                 }
             }
             .padding(12)
+        }
+    }
+
+    // The shortcuts the user added by hand. Each has a small button to remove it.
+    @ViewBuilder
+    private var mine: some View {
+        if !model.myShortcuts.isEmpty {
+            sectionTitle("My shortcuts")
+            ForEach(model.myShortcuts) { shortcut in
+                HStack {
+                    ShortcutRow(title: shortcut.description, detail: "", keys: shortcut.keys)
+                    Button {
+                        model.removeMyShortcut(keys: shortcut.keys)
+                    } label: {
+                        Image(systemName: "xmark.circle")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help("Remove this shortcut")
+                }
+            }
+            Spacer().frame(height: 12)
         }
     }
 

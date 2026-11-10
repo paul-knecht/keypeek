@@ -28,10 +28,13 @@ final class PanelModel: ObservableObject {
     @Published var top: [Shortcut] = []
     @Published var suggestions: [Suggestion] = []
     @Published var rankingState: RankingState = .idle
+    // Shortcuts the user added by hand for the app being shown.
+    @Published var myShortcuts: [MyShortcut] = []
 
     // The three things the model needs from outside. They are passed in so
     // that tests can replace them with fakes.
     private let store: RankingStore
+    private let myStore: MyShortcutStore
     private let loadKey: () -> String?
     private let rank: (String, [Shortcut], String?) async throws -> RankingResult
 
@@ -44,9 +47,11 @@ final class PanelModel: ObservableObject {
     private var appsBeingRanked = Set<String>()
 
     init(store: RankingStore,
+         myStore: MyShortcutStore,
          loadKey: @escaping () -> String?,
          rank: @escaping (String, [Shortcut], String?) async throws -> RankingResult) {
         self.store = store
+        self.myStore = myStore
         self.loadKey = loadKey
         self.rank = rank
     }
@@ -63,6 +68,7 @@ final class PanelModel: ObservableObject {
         currentPID = app?.processIdentifier
         currentBundleID = app?.bundleIdentifier
         currentShortcuts = []
+        loadMyShortcuts()
 
         guard let app, !needsPermission else { return }
         let pid = app.processIdentifier
@@ -89,6 +95,7 @@ final class PanelModel: ObservableObject {
         self.appName = appName
         currentBundleID = bundleID
         currentShortcuts = shortcuts
+        loadMyShortcuts()
         groups = Self.groups(from: shortcuts)
         isReading = false
         top = []
@@ -122,6 +129,24 @@ final class PanelModel: ObservableObject {
                 rankingState = .message(Self.message(for: error as? RankingError ?? .failed))
             }
         }
+    }
+
+    // Saves a shortcut the user typed in. The panel only changes if it is
+    // currently showing that same app.
+    func addMyShortcut(_ shortcut: MyShortcut, bundleID: String) {
+        myStore.add(shortcut, bundleID: bundleID)
+        loadMyShortcuts()
+    }
+
+    // Removes one of the user's shortcuts from the app being shown.
+    func removeMyShortcut(keys: String) {
+        guard let bundleID = currentBundleID else { return }
+        myStore.remove(keys: keys, bundleID: bundleID)
+        loadMyShortcuts()
+    }
+
+    private func loadMyShortcuts() {
+        myShortcuts = currentBundleID.map { myStore.load(bundleID: $0) } ?? []
     }
 
     // Called by "Re-rank this app": forgets the saved answer and asks again.

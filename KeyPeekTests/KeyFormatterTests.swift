@@ -58,6 +58,24 @@ final class KeyFormatterTests: XCTestCase {
         XCTAssertNil(KeyFormatter.string(cmdChar: "\u{F7FF}", virtualKey: nil, glyph: nil, modifiers: 0))
     }
 
+    // MARK: - Keys the user presses in the "Add my shortcut" dialog
+
+    func testPressedOptionCommandArrow() {
+        XCTAssertEqual(KeyFormatter.string(pressedCharacters: "\u{F703}", keyCode: 124, flags: [.option, .command]), "⌥⌘→")
+    }
+
+    func testPressedShiftCommandLetter() {
+        XCTAssertEqual(KeyFormatter.string(pressedCharacters: "p", keyCode: 35, flags: [.shift, .command]), "⇧⌘P")
+    }
+
+    func testPressedKeyWithoutCommand() {
+        XCTAssertEqual(KeyFormatter.string(pressedCharacters: " ", keyCode: 49, flags: [.control]), "⌃Space")
+    }
+
+    func testPressedModifierAloneIsNil() {
+        XCTAssertNil(KeyFormatter.string(pressedCharacters: "", keyCode: 55, flags: [.command]))
+    }
+
     func testNoKeyIsNil() {
         XCTAssertNil(KeyFormatter.string(cmdChar: nil, virtualKey: nil, glyph: nil, modifiers: 0))
     }

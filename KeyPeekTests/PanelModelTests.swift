@@ -33,12 +33,14 @@ final class PanelModelTests: XCTestCase {
     )
     private var directory: URL!
     private var store: RankingStore!
+    private var myStore: MyShortcutStore!
     private var rankCalls = 0
 
     override func setUp() {
         directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("KeyPeekPanelTests-\(UUID().uuidString)")
         store = RankingStore(directory: directory)
+        myStore = MyShortcutStore(directory: directory.appendingPathComponent("mine"))
         rankCalls = 0
     }
 
@@ -48,7 +50,7 @@ final class PanelModelTests: XCTestCase {
 
     // A model whose "ask Claude" step is replaced by the given closure.
     private func makeModel(rank: @escaping (String) async throws -> RankingResult) -> PanelModel {
-        PanelModel(store: store, loadKey: { "test-key" }, rank: { appName, _, _ in
+        PanelModel(store: store, myStore: myStore, loadKey: { "test-key" }, rank: { appName, _, _ in
             self.rankCalls += 1
             return try await rank(appName)
         })
@@ -153,6 +155,58 @@ final class PanelModelTests: XCTestCase {
         XCTAssertEqual(rankCalls, 0)
         XCTAssertEqual(model.rankingState, .idle)
         XCTAssertFalse(model.groups.isEmpty)
+    }
+
+    // MARK: - My shortcuts
+
+    func testShowLoadsMyShortcutsForThatApp() async {
+        myStore.add(MyShortcut(keys: "⌥⌘→", description: "Switch to Claude Code"), bundleID: "a")
+        let model = makeModel { _ in self.result }
+
+        await model.show(appName: "A", bundleID: "a", shortcuts: shortcuts)
+        XCTAssertEqual(model.myShortcuts.map(\.keys), ["⌥⌘→"])
+
+        await model.show(appName: "B", bundleID: "b", shortcuts: shortcuts)
+        XCTAssertEqual(model.myShortcuts, [])
+    }
+
+    func testMyShortcutsShowEvenWhenTheAppHasNoMenuShortcuts() async {
+        myStore.add(MyShortcut(keys: "⌥⌘→", description: "Switch to Claude Code"), bundleID: "a")
+        let model = makeModel { _ in self.result }
+        await model.show(appName: "A", bundleID: "a", shortcuts: [])
+        XCTAssertEqual(model.myShortcuts.count, 1)
+    }
+
+    func testAddAndRemoveMyShortcutUpdatesThePanelAndTheFile() async {
+        let model = makeModel { _ in self.result }
+        await model.show(appName: "A", bundleID: "a", shortcuts: shortcuts)
+
+        model.addMyShortcut(MyShortcut(keys: "⌥⌘→", description: "Switch to Claude Code"), bundleID: "a")
+        XCTAssertEqual(model.myShortcuts.map(\.keys), ["⌥⌘→"])
+        XCTAssertEqual(myStore.load(bundleID: "a").count, 1)
+
+        model.removeMyShortcut(keys: "⌥⌘→")
+        XCTAssertEqual(model.myShortcuts, [])
+        XCTAssertEqual(myStore.load(bundleID: "a"), [])
+    }
+
+    func testAddingForAnotherAppDoesNotChangeThePanel() async {
+        let model = makeModel { _ in self.result }
+        await model.show(appName: "A", bundleID: "a", shortcuts: shortcuts)
+        model.addMyShortcut(MyShortcut(keys: "⌘J", description: "Other app"), bundleID: "b")
+        XCTAssertEqual(model.myShortcuts, [])
+        XCTAssertEqual(myStore.load(bundleID: "b").count, 1)
+    }
+
+    func testMyShortcutsAreNeverSentForRanking() async {
+        myStore.add(MyShortcut(keys: "⌥⌘→", description: "Private note"), bundleID: "a")
+        var sent: [Shortcut] = []
+        let model = PanelModel(store: store, myStore: myStore, loadKey: { "k" }, rank: { _, list, _ in
+            sent = list
+            return self.result
+        })
+        await model.show(appName: "A", bundleID: "a", shortcuts: shortcuts)
+        XCTAssertEqual(sent, shortcuts)
     }
 
     func testRerankAsksAgainAndReplacesSavedResult() async {

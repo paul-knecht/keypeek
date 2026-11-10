@@ -37,11 +37,8 @@ struct RankingStore {
         try? FileManager.default.removeItem(at: file(for: bundleID))
     }
 
-    // The file for one app. Any character that could be unsafe in a file
-    // name is replaced by "_", so the file always stays inside our folder.
+    // The file for one app.
     private func file(for bundleID: String) -> URL {
-        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-")
-        let safeName = String(bundleID.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" })
-        return directory.appendingPathComponent(safeName + ".json")
+        directory.appendingPathComponent(SafeFileName.json(for: bundleID))
     }
 }
