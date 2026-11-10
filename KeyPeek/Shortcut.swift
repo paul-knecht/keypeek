@@ -28,6 +28,14 @@ struct Suggestion: Equatable, Codable {
     let description: String
 }
 
+// A shortcut the user added by hand for one app, for shortcuts that
+// neither the menus nor Claude know about.
+struct MyShortcut: Equatable, Codable, Identifiable {
+    let keys: String
+    let description: String
+    var id: String { keys }
+}
+
 // One entry of an app's menu bar as the Accessibility API reports it:
 // a menu, a submenu, or a single menu item.
 struct MenuNode {

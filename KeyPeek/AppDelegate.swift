@@ -24,6 +24,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // the saved rankings, a way to read the API key, and the request to Claude.
     lazy var model = PanelModel(
         store: RankingStore(),
+        myStore: MyShortcutStore(),
         loadKey: { [keychain] in keychain.load() },
         rank: { appName, shortcuts, apiKey in
             try await RankingClient.rank(appName: appName, shortcuts: shortcuts, apiKey: apiKey)
@@ -68,6 +69,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Build the right-click menu.
+        let addItem = NSMenuItem(title: "Add my shortcut…", action: #selector(addMyShortcut), keyEquivalent: "")
+        addItem.target = self
+        menu.addItem(addItem)
         let rerankItem = NSMenuItem(title: "Re-rank this app", action: #selector(rerank), keyEquivalent: "")
         rerankItem.target = self
         menu.addItem(rerankItem)
@@ -76,6 +80,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(keyItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+    }
+
+    // Lets the user add a shortcut of their own for the app that is in front.
+    @objc func addMyShortcut() {
+        guard let app = tracker.current, let bundleID = app.bundleIdentifier else { return }
+        if let shortcut = AddShortcutDialog.run(appName: app.localizedName ?? "this app") {
+            model.addMyShortcut(shortcut, bundleID: bundleID)
+        }
     }
 
     // Forgets the saved ranking of the app shown last and asks Claude again.
