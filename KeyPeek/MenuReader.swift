@@ -11,8 +11,12 @@ enum MenuReader {
         AXIsProcessTrusted()
     }
 
-    // Opens the Accessibility page in System Settings.
+    // Asks macOS to add KeyPeek to the Accessibility list (macOS shows its own
+    // dialog the first time) and opens that page in System Settings.
     static func openPermissionSettings() {
+        let prompt = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
+        _ = AXIsProcessTrustedWithOptions([prompt: true] as CFDictionary)
+
         let address = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
         if let url = URL(string: address) {
             NSWorkspace.shared.open(url)

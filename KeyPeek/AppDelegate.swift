@@ -1,6 +1,8 @@
 import AppKit
+import SwiftUI
 
 // Owns the menu bar icon and the panel that opens from it.
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     // The icon in the menu bar. We keep a reference so it doesn't disappear.
@@ -11,6 +13,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // The menu shown on right-click.
     let menu = NSMenu()
+
+    // Knows which app was in front before the icon was clicked.
+    let tracker = FrontAppTracker()
+
+    // Holds what the panel shows.
+    let model = PanelModel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create the menu bar icon.
@@ -27,8 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // The panel closes by itself when you click anywhere else.
         popover.behavior = .transient
         popover.contentSize = NSSize(width: 360, height: 480)
-        popover.contentViewController = NSViewController()
-        popover.contentViewController?.view = NSView()
+        popover.contentViewController = NSHostingController(rootView: PanelView(model: model))
 
         // Build the right-click menu.
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -52,6 +59,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if popover.isShown {
             popover.close()
         } else if let button = statusItem.button {
+            // Load the shortcuts of the app that was in front, then show the panel.
+            model.open(for: tracker.current)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         }
     }
