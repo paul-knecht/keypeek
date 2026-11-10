@@ -36,7 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Tell the icon's button to call iconClicked for left AND right clicks.
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "KeyPeek")
+            button.image = NSImage(systemSymbolName: "command.circle", accessibilityDescription: "KeyPeek")
             button.target = self
             button.action = #selector(iconClicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
